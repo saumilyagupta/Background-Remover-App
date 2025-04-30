@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Image Background Changer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-500 p-4 text-white">
+  <h1 class="text-4xl font-bold mb-6 drop-shadow-lg text-center">Image Background Changer</h1>
+  
+  <!-- Source Image Upload -->
+  <div class="flex space-x-6">
+    <div class="drop-zone w-52 h-52 flex items-center justify-center border-2 border-dashed border-gray-300 bg-white bg-opacity-25 cursor-pointer relative text-lg font-semibold text-gray-100 p-4 text-center rounded-lg hover:bg-opacity-40 transition shadow-lg" id="source-drop">
+      <span class="absolute text-center px-2">Drop or Click to Select <br> Source Image</span>
+    </div>
+    <input type="file" id="source-input" class="hidden" accept="image/*">
+  </div>
+
+  <!-- Background Selection: Toggle between upload and default -->
+  <div class="mt-6">
+    <label class="mr-4">
+      <input type="radio" name="bg-option" value="upload" checked>
+      Upload Background
+    </label>
+    <label>
+      <input type="radio" name="bg-option" value="default">
+      Use Default Background
+    </label>
+  </div>
+
+  <!-- Background Upload Zone -->
+  <div id="background-upload-container" class="flex space-x-6 mt-4">
+    <div class="drop-zone w-52 h-52 flex items-center justify-center border-2 border-dashed border-gray-300 bg-white bg-opacity-25 cursor-pointer relative text-lg font-semibold text-gray-100 p-4 text-center rounded-lg hover:bg-opacity-40 transition shadow-lg" id="background-drop">
+      <span class="absolute text-center px-2">Drop or Click to Select <br> Background Image</span>
+    </div>
+    <input type="file" id="background-input" class="hidden" accept="image/*">
+  </div>
+
+  <!-- Default Background Options (hidden by default) -->
+  <div id="default-background-container" class="mt-4 grid grid-cols-3 gap-4 hidden">
+    <!-- Replace the src attributes with your own default background image URLs -->
+    <img src="uploads/default/bg_img_1 (1).jpg" class="w-32 h-32 object-cover rounded-lg cursor-pointer default-bg" data-url="uploads/default/bg_img_1 (1).jpg" alt="Default Background 1">
+    <img src="uploads/default/bg_img_1 (2).jpg" class="w-32 h-32 object-cover rounded-lg cursor-pointer default-bg" data-url="uploads/default/bg_img_1 (2).jpg" alt="Default Background 1">
+    <img src="uploads/default/bg_img_1 (3).jpg" class="w-32 h-32 object-cover rounded-lg cursor-pointer default-bg" data-url="uploads/default/bg_img_1 (3).jpg" alt="Default Background 1">
+    <img src="uploads/default/bg_img_1 (4).jpg" class="w-32 h-32 object-cover rounded-lg cursor-pointer default-bg" data-url="uploads/default/bg_img_1 (4).jpg" alt="Default Background 1">
+    <img src="uploads/default/bg_img_1 (5).jpg" class="w-32 h-32 object-cover rounded-lg cursor-pointer default-bg" data-url="uploads/default/bg_img_1 (5).jpg" alt="Default Background 1">
+   
+  </div>
+
+  <button id="process-btn" class="mt-6 px-6 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 transition shadow-lg">Process Image</button>
+  
+  <!-- Spinner as Loading Indicator -->
+  <div id="spinner" class="hidden fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+    <div class="spinner-square">
+      <div class="square-1 square"></div>
+      <div class="square-2 square"></div>
+      <div class="square-3 square"></div>
+    </div>
+  </div>
+  
+  <div id="progress-container" class="w-full max-w-sm bg-gray-300 h-2 rounded mt-4 hidden">
+    <div id="progress-bar" class="h-full bg-green-500 w-0 transition-all"></div>
+  </div>
+  
+  <h2 class="text-xl font-semibold mt-6">Processed Image</h2>
+  <img id="output-image" class="hidden mt-4 max-w-full border border-gray-400 rounded-lg shadow-lg">
+  <br>
+  <a id="download-link" class="hidden text-blue-200 hover:underline mt-4" download="output.png">Download Processed Image</a>
+  
+  <script>
+    // Toggle background selection options
+    document.querySelectorAll('input[name="bg-option"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        if(radio.value === 'upload' && radio.checked) {
+          document.getElementById('background-upload-container').classList.remove('hidden');
+          document.getElementById('default-background-container').classList.add('hidden');
+        }
+        if(radio.value === 'default' && radio.checked) {
+          document.getElementById('background-upload-container').classList.add('hidden');
+          document.getElementById('default-background-container').classList.remove('hidden');
+        }
+      });
+    });
+
+    // Let user click on a default background to choose it
+    document.querySelectorAll('.default-bg').forEach(img => {
+      img.addEventListener('click', () => {
+        // Mark selection (optional: add a border to indicate selection)
+        document.querySelectorAll('.default-bg').forEach(el => el.classList.remove('ring-4'));
+        img.classList.add('ring-4', 'ring-green-500');
+        // Store the selected URL in a data attribute on the container
+        document.getElementById('default-background-container').setAttribute('data-selected', img.getAttribute('data-url'));
+      });
+    });
+
+    function handleDrop(event, inputId) {
+      event.preventDefault();
+      const file = event.dataTransfer.files[0];
+      if (file) {
+        document.getElementById(inputId).files = event.dataTransfer.files;
+        previewImage(file, event.target);
+      }
+    }
+
+    function previewImage(file, dropZone) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        dropZone.innerHTML = `<img src="${e.target.result}" class="absolute inset-0 w-full h-full object-cover rounded-lg">`;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Source drop zone
+    document.getElementById('source-drop').addEventListener('dragover', (e) => e.preventDefault());
+    document.getElementById('source-drop').addEventListener('drop', (e) => handleDrop(e, 'source-input'));
+    document.getElementById('source-drop').addEventListener('click', () => document.getElementById('source-input').click());
+    document.getElementById('source-input').addEventListener('change', (e) => {
+      previewImage(e.target.files[0], document.getElementById('source-drop'));
+    });
+
+    // Background drop zone (for upload option)
+    document.getElementById('background-drop').addEventListener('dragover', (e) => e.preventDefault());
+    document.getElementById('background-drop').addEventListener('drop', (e) => handleDrop(e, 'background-input'));
+    document.getElementById('background-drop').addEventListener('click', () => document.getElementById('background-input').click());
+    document.getElementById('background-input').addEventListener('change', (e) => {
+      previewImage(e.target.files[0], document.getElementById('background-drop'));
+    });
+
+    document.getElementById('process-btn').addEventListener('click', async () => {
+      const sourceFile = document.getElementById('source-input').files[0];
+      let backgroundFile;
+      const bgOption = document.querySelector('input[name="bg-option"]:checked').value;
+      
+      if(bgOption === 'upload') {
+        backgroundFile = document.getElementById('background-input').files[0];
+      } else {
+        // Use selected default background URL
+        backgroundFile = document.getElementById('default-background-container').getAttribute('data-selected');
+        if(!backgroundFile) {
+          alert('Please select a default background image.');
+          return;
+        }
+      }
+      
+      if (!sourceFile) {
+        alert('Please select a source image.');
+        return;
+      }
+      
+      const formData = new FormData();
+      formData.append('source', sourceFile);
+      if(bgOption === 'upload') {
+        formData.append('background', backgroundFile);
+      } else {
+        // For default backgrounds, send the URL string
+        formData.append('background_url', backgroundFile);
+      }
+      
+      // Show spinner and progress bar
+      document.getElementById('spinner').classList.remove('hidden');
+      document.getElementById('progress-container').classList.remove('hidden');
+      document.getElementById('progress-bar').style.width = '30%';
+      
+      const response = await fetch('/upload/', {
+        method: 'POST',
+        body: formData
+      });
+      
+      // Hide spinner
+      document.getElementById('spinner').classList.add('hidden');
+      
+      if (response.ok) {
+        document.getElementById('progress-bar').style.width = '100%';
+        const data = await response.json();
+        const imageUrl = `/uploads/${data.output_path.split('/').pop()}`;
+        document.getElementById('output-image').src = imageUrl;
+        document.getElementById('output-image').classList.remove('hidden');
+        
+        const downloadLink = document.getElementById('download-link');
+        downloadLink.href = imageUrl;
+        downloadLink.classList.remove('hidden');
+      }
+    });
+  </script>
+</body>
+</html>
