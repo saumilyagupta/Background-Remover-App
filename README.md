@@ -54,8 +54,8 @@ Here are some examples of the background removal results:
 1. Clone the repository:
 
 ```bash
-git clone [your-repository-url]
-cd [repository-name]
+git clone https://github.com/saumilyagupta/Background-Remover-App
+cd Background-Remover-App
 ```
 
 2. Install the required packages:
